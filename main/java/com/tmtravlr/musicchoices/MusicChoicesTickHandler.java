@@ -12,8 +12,9 @@ import net.minecraft.stats.AchievementList;
 import net.minecraft.util.AxisAlignedBB;
 import net.minecraft.util.MovingObjectPosition;
 import net.minecraft.util.Vec3;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
-import net.minecraftforge.fml.common.gameevent.TickEvent.ClientTickEvent;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.gameevent.TickEvent.ClientTickEvent;
+import cpw.mods.fml.common.gameevent.TickEvent.Phase;
 
 /**
  * Tick handler to handle things that need to be updated per tick.
@@ -64,7 +65,7 @@ public class MusicChoicesTickHandler {
 					if(MusicChoicesMod.debug) System.out.println("[Music Choices] Looking for login music to play.");
 					MusicProperties toPlay = MusicProperties.findTrackForCurrentSituationFromList(MusicProperties.loginList);
 					if(toPlay != null) {
-						MusicChoicesMod.ticker.playOvertopMusic(toPlay);
+						MusicChoicesMusicTicker.ticker.playOvertopMusic(toPlay);
 					}
 				}
 				
@@ -88,7 +89,7 @@ public class MusicChoicesTickHandler {
 	
 						if (toPlay != null)
 						{
-							MusicChoicesMod.ticker.playOvertopMusic(toPlay);
+							MusicChoicesMusicTicker.ticker.playOvertopMusic(toPlay);
 						}
 					}
 				}
@@ -97,10 +98,10 @@ public class MusicChoicesTickHandler {
 			if(dayCheckCooldown-- <= 0) {
 				dayCheckCooldown = 10;
 				
-				if(dimensionId != mc.theWorld.provider.getDimensionId()) {
+				if(dimensionId != mc.theWorld.provider.dimensionId) {
 					//We changed dimensions, so reset the brightness
 					sunBrightness = -1.0F;
-					dimensionId = mc.theWorld.provider.getDimensionId();
+					dimensionId = mc.theWorld.provider.dimensionId;
 					dayCheckCooldown = 100;
 				}
 				else {
@@ -111,7 +112,7 @@ public class MusicChoicesTickHandler {
 								if(MusicChoicesMod.debug) System.out.println("[Music Choices] Looking for sunset music to play.");
 								MusicProperties toPlay = MusicProperties.findTrackForCurrentSituationFromList(MusicProperties.sunsetList);
 								if(toPlay != null) {
-									MusicChoicesMod.ticker.playOvertopMusic(toPlay);
+									MusicChoicesMusicTicker.ticker.playOvertopMusic(toPlay);
 								}
 							}
 						}
@@ -121,7 +122,7 @@ public class MusicChoicesTickHandler {
 								if(MusicChoicesMod.debug) System.out.println("[Music Choices] Looking for sunrise music to play.");
 								MusicProperties toPlay = MusicProperties.findTrackForCurrentSituationFromList(MusicProperties.sunriseList);
 								if(toPlay != null) {
-									MusicChoicesMod.ticker.playOvertopMusic(toPlay);
+									MusicChoicesMusicTicker.ticker.playOvertopMusic(toPlay);
 								}
 							}
 						}
@@ -143,7 +144,7 @@ public class MusicChoicesTickHandler {
 						if(MusicChoicesMod.debug) System.out.println("[Music Choices] Looking for death music to play.");
 						MusicProperties toPlay = MusicProperties.findTrackForCurrentSituationFromList(MusicProperties.deathList);
 						if(toPlay != null) {
-							MusicChoicesMod.ticker.playOvertopMusic(toPlay);
+							MusicChoicesMusicTicker.ticker.playOvertopMusic(toPlay);
 						}
 					}
 				}
@@ -154,7 +155,7 @@ public class MusicChoicesTickHandler {
 						if(MusicChoicesMod.debug) System.out.println("[Music Choices] Looking for respawn music to play.");
 						MusicProperties toPlay = MusicProperties.findTrackForCurrentSituationFromList(MusicProperties.respawnList);
 						if(toPlay != null) {
-							MusicChoicesMod.ticker.playOvertopMusic(toPlay);
+							MusicChoicesMusicTicker.ticker.playOvertopMusic(toPlay);
 						}
 					}
 				}
@@ -178,8 +179,8 @@ public class MusicChoicesTickHandler {
 						MusicProperties toPlay = MusicProperties.findMusicFromNBTMap(entity, MusicProperties.bossMap);
 						
 						if(toPlay != null) {
-							MusicChoicesMod.ticker.playBossMusic(toPlay);
-							MusicChoicesMod.ticker.bossEntity = entity;
+							MusicChoicesMusicTicker.ticker.playBossMusic(toPlay);
+							MusicChoicesMusicTicker.ticker.bossEntity = entity;
 						}
 					}
 				}
@@ -196,13 +197,13 @@ public class MusicChoicesTickHandler {
 	private Entity findEntityLookedAt() {
 		int distance = 1000;
 		
-		Vec3 vecPos = new Vec3(this.mc.thePlayer.getPosition().getX(),this.mc.thePlayer.getPosition().getY(),this.mc.thePlayer.getPosition().getZ());
-		Vec3 vecLook = this.mc.thePlayer.getLook(0);
+		Vec3 vecPos = this.mc.renderViewEntity.getPosition(0);
+		Vec3 vecLook = this.mc.renderViewEntity.getLook(0);
         Vec3 vecPosLook = vecPos.addVector(vecLook.xCoord * distance, vecLook.yCoord * distance, vecLook.zCoord * distance);
         Entity pointedEntity = null;
         Vec3 vecHit = null;
         float expansion = 1.0F;
-        List entityList = this.mc.theWorld.getEntitiesWithinAABBExcludingEntity(this.mc.thePlayer, this.mc.thePlayer.getBoundingBox().addCoord(vecLook.xCoord * distance, vecLook.yCoord * distance, vecLook.zCoord * distance).expand((double)expansion, (double)expansion, (double)expansion));
+        List entityList = this.mc.theWorld.getEntitiesWithinAABBExcludingEntity(this.mc.renderViewEntity, this.mc.renderViewEntity.boundingBox.addCoord(vecLook.xCoord * distance, vecLook.yCoord * distance, vecLook.zCoord * distance).expand((double)expansion, (double)expansion, (double)expansion));
         double d2 = distance;
 
         for (int i = 0; i < entityList.size(); ++i)
@@ -212,7 +213,7 @@ public class MusicChoicesTickHandler {
             if (entity.canBeCollidedWith())
             {
                 float f2 = entity.getCollisionBorderSize();
-                AxisAlignedBB axisalignedbb = entity.getBoundingBox().expand((double)f2, (double)f2, (double)f2);
+                AxisAlignedBB axisalignedbb = entity.boundingBox.expand((double)f2, (double)f2, (double)f2);
                 MovingObjectPosition movingobjectposition = axisalignedbb.calculateIntercept(vecPos, vecPosLook);
 
                 if (axisalignedbb.isVecInside(vecPos))
@@ -230,7 +231,7 @@ public class MusicChoicesTickHandler {
 
                     if (d3 < d2 || d2 == 0.0D)
                     {
-                        if (entity == this.mc.thePlayer.ridingEntity && !entity.canRiderInteract())
+                        if (entity == this.mc.renderViewEntity.ridingEntity && !entity.canRiderInteract())
                         {
                             if (d2 == 0.0D)
                             {

@@ -12,6 +12,9 @@ import net.minecraft.nbt.NBTTagCompound;
 
 import com.google.common.collect.Lists;
 
+import cpw.mods.fml.relauncher.Side;
+import cpw.mods.fml.relauncher.SideOnly;
+
 /**
  * List to hold info about the music properties.
  * 

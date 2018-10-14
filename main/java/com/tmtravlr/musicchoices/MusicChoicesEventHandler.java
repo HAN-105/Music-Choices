@@ -5,16 +5,16 @@ import java.util.Random;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.audio.SoundCategory;
 import net.minecraft.client.gui.GuiWinGame;
-import net.minecraft.entity.player.EntityPlayer;
-import net.minecraft.entity.EntityList;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.EnumCreatureType;
+import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.client.event.GuiOpenEvent;
-import net.minecraftforge.client.event.sound.PlaySoundEvent;
-import net.minecraftforge.event.entity.living.LivingDeathEvent;
-import net.minecraftforge.event.entity.living.LivingHurtEvent;
+import net.minecraftforge.client.event.sound.PlaySoundEvent17;
+import net.minecraftforge.event.entity.living.LivingAttackEvent;
+import net.minecraftforge.event.entity.living.LivingSetAttackTargetEvent;
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
-import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
+import cpw.mods.fml.common.eventhandler.EventPriority;
+import cpw.mods.fml.common.eventhandler.SubscribeEvent;
 
 /**
  * Event handler to play music when events happen.
@@ -27,17 +27,16 @@ public class MusicChoicesEventHandler {
 	private Minecraft mc = Minecraft.getMinecraft();
 	private Random rand = new Random();
 	
-	@SubscribeEvent
-	public void onSound(PlaySoundEvent event) {
+	@SubscribeEvent(priority = EventPriority.LOW)
+	public void onSound(PlaySoundEvent17 event) {
 		
 		//Set any 
-		if(event.result != null && (event.category == SoundCategory.MUSIC || event.category == SoundCategory.RECORDS) && !event.result.getSoundLocation().toString().contains("note.")) {
+		if((event.result != null && event.category == SoundCategory.MUSIC || event.category == SoundCategory.RECORDS) && !event.result.getPositionedSoundLocation().toString().contains("note.")) {
 			
 			if(!MChHelper.isSoundTracked(event.result)) {
-				MusicChoicesMod.ticker.setOvertopMusic(event.result, null);
+				MusicChoicesMusicTicker.ticker.setOvertopMusic(event.result, null);
 			}
 		}
-		
 	}
 	
 	/**
@@ -45,18 +44,33 @@ public class MusicChoicesEventHandler {
 	 */
 	@SubscribeEvent
 	public void onCredits(GuiOpenEvent event) {
-		if (event.gui instanceof GuiWinGame && MusicChoicesMod.ticker.creditsMusic == null) {
+		if (event.gui instanceof GuiWinGame && MusicChoicesMusicTicker.ticker.creditsMusic == null) {
 			
 			if(!MusicProperties.creditsList.isEmpty()) {
 				
 				MusicProperties credits = MusicProperties.creditsList.get(rand.nextInt(MusicProperties.creditsList.size()));
 				
 				if(credits != null) {
-					MusicChoicesMod.ticker.playCreditsMusic(credits);
+					MusicChoicesMusicTicker.ticker.playCreditsMusic(credits);
 				}
 			}
 		}
 	}
+	
+//	@SubscribeEvent
+//	public void onTargetting(LivingSetAttackTargetEvent event) {
+//		triggerBattleMusic(event.entityLiving, event.target);
+//	}
+	
+//	@SubscribeEvent
+//	public void onLivingAttacked(LivingAttackEvent event) {
+//		
+//		System.out.println("Attack detected! Attacker: "+event.source.getEntity()+", Target: "+event.entityLiving);
+//		
+//		if(event.source.getEntity() instanceof EntityLivingBase) {
+//			triggerBattleMusic((EntityLivingBase) event.source.getEntity(), event.entityLiving);
+//		}
+//	}
 	
 	@SubscribeEvent
 	public void onAttack(AttackEntityEvent event) {
@@ -109,12 +123,12 @@ public class MusicChoicesEventHandler {
 	}
 	
 	private boolean playBossMusicForEntity(EntityLivingBase entity) {
-		if(!entity.isDead && entity.getHealth() > 0) {
+		if(entity != null && !entity.isDead && entity.getHealth() > 0) {
 			MusicProperties toPlay = MusicProperties.findMusicFromNBTMap(entity, MusicProperties.bossMap);
 			
 			if(toPlay != null) {
-				MusicChoicesMod.ticker.playBossMusic(toPlay);
-				MusicChoicesMod.ticker.bossEntity = entity;
+				MusicChoicesMusicTicker.ticker.playBossMusic(toPlay);
+				MusicChoicesMusicTicker.ticker.bossEntity = entity;
 				return true;
 			}
 		}
@@ -131,14 +145,14 @@ public class MusicChoicesEventHandler {
 			MusicProperties toPlay = MusicProperties.findMusicFromStringMap(entityName, MusicProperties.battleMap);
 			
 			if(toPlay == null) {
-				if(!MusicChoicesMod.battleMonsterOnly || entity.isCreatureType(EnumCreatureType.MONSTER, false)) {
+				if(!MusicChoicesMod.battleMonsterOnly || entity.isCreatureType(EnumCreatureType.monster, false)) {
 					toPlay = MusicProperties.findBattleMusicFromBlacklist(entityName);
 				}
 			}
 			
 			if(toPlay != null) {
-				MusicChoicesMod.ticker.playBattleMusic(toPlay);
-				MusicChoicesMod.ticker.battleEntityType = entityName;
+				MusicChoicesMusicTicker.ticker.playBattleMusic(toPlay);
+				MusicChoicesMusicTicker.ticker.battleEntityType = entityName;
 				return true;
 			}
 			
